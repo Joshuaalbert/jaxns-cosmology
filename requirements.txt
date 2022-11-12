@@ -1,0 +1,10 @@
+jaxns
+jax
+jaxlib
+bilby
+matplotlib
+numpy
+scipy
+pytest
+tensorflow
+arviz
