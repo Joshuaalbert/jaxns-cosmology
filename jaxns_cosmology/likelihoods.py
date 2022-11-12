@@ -142,7 +142,9 @@ class CMB(MLFunction, bilby.Likelihood):
             i += 1
 
         self.priors = priors
-        super(CMB, self).__init__(parameters=parameters)
+
+        params = dict((key, 0.) for key in parameters)
+        super(CMB, self).__init__(parameters=params)
 
     def log_likelihood(self):
         if self.model is None:
@@ -214,7 +216,9 @@ class MSSM7(MLFunction, bilby.Likelihood):
 
         self.priors = priors
 
-        super(MSSM7, self).__init__(parameters=parameters)
+        params = dict((key, 0.) for key in parameters)
+
+        super(MSSM7, self).__init__(parameters=params)
 
     def log_likelihood(self):
         if self.model is None:

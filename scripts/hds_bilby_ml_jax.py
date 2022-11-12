@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # Input is the number of dimensions for nD functions
     dim = 2
-    likelihood = GaussianShells(dim)
+    likelihood = GaussianShells()
     priors = likelihood.priors
 
     # And run sampler

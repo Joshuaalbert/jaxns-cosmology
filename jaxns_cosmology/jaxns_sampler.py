@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import jit, random, tree_map
-from jaxns import NestedSampler as OrigNestedSampler, plot_cornerplot, plot_diagnostics
+from jaxns import NestedSampler as OrigNestedSampler
 from jaxns import PriorChain, UniformPrior
 from jaxns.nested_sampler.utils import resample, summary
 
@@ -166,4 +166,4 @@ class Jaxns(NestedSampler):
 
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
-        self.result.samples = tree_map(lambda x: np.asarray(x), samples)#tree_map(np.asarray, samples)  #
+        self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
