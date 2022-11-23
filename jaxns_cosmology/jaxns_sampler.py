@@ -166,4 +166,5 @@ class Jaxns(NestedSampler):
 
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
-        self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
+        #self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
+        self.result.samples = self.posterior.drop(['chain', 'draw'], axis = 1).to_numpy()
