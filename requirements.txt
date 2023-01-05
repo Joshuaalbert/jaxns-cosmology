@@ -1,10 +1,12 @@
-jaxns
+jaxns>=2.0.0
 jax
 jaxlib
+etils
 bilby
 matplotlib
 numpy
 scipy
 pytest
 tensorflow
+tensorflow_probability
 arviz

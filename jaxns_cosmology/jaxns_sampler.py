@@ -1,22 +1,21 @@
+import os
+
 import jax.numpy as jnp
 import numpy as np
+import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
-from jax import jit, random, tree_map
-from jaxns import NestedSampler as OrigNestedSampler
-from jaxns import PriorChain, UniformPrior
-from jaxns.nested_sampler.utils import resample, summary
+from jax import random, tree_map
+from jaxns import ExactNestedSampler as OrigNestedSampler, Prior, Model, TerminationCondition, resample, \
+    evidence_posterior_samples, summary, plot_diagnostics
+
+tfpd = tfp.distributions
 
 
 class Jaxns(NestedSampler):
     default_kwargs = dict(
         use_jaxns_defaults=True,
-        sampler_name='slice',
-        num_parallel_samplers=1,
-        samples_per_step=None,
-        # sampler_kwargs=None,
-        max_samples=1e5,
-        dynamic=False,
-        verbose=True
+        max_samples=1e6,
+        uncert_improvement_patience=3
     )
 
     def __init__(
@@ -88,35 +87,49 @@ class Jaxns(NestedSampler):
         exec(loglik_fn_def, locals(), local_dict)
         loglik_fn = local_dict["loglik_fn"]
 
-        with PriorChain() as prior_chain:
+        def prior_model():
+            params = []
             for key in self.priors:
-                prior = UniformPrior(self.priors[key].name, low=self.priors[key].minimum, high=self.priors[key].maximum)
+                param = yield Prior(tfpd.Uniform(low=self.priors[key].minimum, high=self.priors[key].maximum),
+                                    name=self.priors[key].name)
+                params.append(param)
+            return tuple(params)
+
+        model = Model(prior_model=prior_model, log_likelihood=loglik_fn)
 
         if self.kwargs['use_jaxns_defaults']:
             # Create the nested sampler class. In this case without any tuning.
-            ns = OrigNestedSampler(loglik_fn, prior_chain)
+            ns = OrigNestedSampler(model=model,
+                                   num_live_points=model.U_ndims * 50,
+                                   max_samples=1e6,
+                                   uncert_improvement_patience=3)
         else:
             jn_kwargs = self.kwargs.copy()
-            jn_kwargs.pop('user_jaxns_defaults')
-            ns = OrigNestedSampler(loglik_fn, prior_chain, **jn_kwargs)
-        # We jit-compile
-        ns = jit(ns)
+            jn_kwargs.pop('use_jaxns_defaults')
+            ns = OrigNestedSampler(model=model,
+                                   num_live_points=model.U_ndims * 50,
+                                   max_samples=1e6,
+                                   uncert_improvement_patience=3,
+                                   **jn_kwargs)
 
-        results = ns(random.PRNGKey(42424242),
-                     termination_ess=None,
-                     termination_evidence_uncert=None,
-                     termination_live_evidence_frac=1e-4,
-                     termination_max_num_steps=None,
-                     termination_max_samples=None,
-                     termination_max_num_likelihood_evaluations=None,
-                     adaptive_evidence_patience=0,
-                     adaptive_evidence_stopping_threshold=None,
-                     G=0.,
-                     num_live_points=None
-                     )
+        term_cond = TerminationCondition(live_evidence_frac=1e-4)
 
-        summary(results)
-        # plot_diagnostics(results)
+        termination_reason, state = ns(key=random.PRNGKey(42424242), term_cond=term_cond)
+        results = ns.to_results(state=state, termination_reason=termination_reason)
+
+        log_Z = evidence_posterior_samples(key=state.key,
+                                           num_live_points_per_sample=results.num_live_points_per_sample,
+                                           log_L_samples=results.log_L_samples,
+                                           S=1000)
+        log_Z_mean = jnp.nanmean(log_Z)
+        log_Z_std = jnp.nanstd(log_Z)
+        results = results._replace(
+            log_Z_mean=jnp.where(jnp.isnan(log_Z_mean), results.log_Z_mean, log_Z_mean),
+            log_Z_uncert=jnp.where(jnp.isnan(log_Z_std), results.log_Z_uncert, log_Z_std)
+        )
+        os.makedirs(self.outdir, exist_ok=True)
+        summary(results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
+        plot_diagnostics(results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
         # plot_cornerplot(results)
 
         self._generate_result(results)
@@ -166,5 +179,5 @@ class Jaxns(NestedSampler):
 
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
-        #self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
-        self.result.samples = self.posterior.drop(['chain', 'draw'], axis = 1).to_numpy()
+        # self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
+        self.result.samples = self.posterior.drop(['chain', 'draw'], axis=1).to_numpy()

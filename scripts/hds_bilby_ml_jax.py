@@ -20,15 +20,13 @@ except ImportError:
 
 if __name__ == '__main__':
     # Output folders
-    label = 'rosenbrock'
     outdir = 'outdir'
 
     # Functions are:
     # 6D-CMB, 12D-MSSM7, nD-Rosenbrock, nD-Rastrigin, 2D-Himmelblau, nD-EggBox, nD-GaussianShells
 
     # Input is the number of dimensions for nD functions
-    dim = 2
-    likelihood = GaussianShells()
+    likelihood = GaussianShells(dimensionality=2)
     priors = likelihood.priors
 
     # And run sampler
@@ -38,7 +36,7 @@ if __name__ == '__main__':
 
     result = bilby.run_sampler(
         likelihood=likelihood, priors=priors,
-        sampler='jaxns', outdir=outdir, label=label)
+        sampler='jaxns', outdir=outdir, label=likelihood.__class__.__name__)
 
     print(result.posterior)
 

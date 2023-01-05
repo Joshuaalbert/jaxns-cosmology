@@ -2,7 +2,6 @@
 """
 All log-likelihoods for bilby runs
 """
-import math
 import os
 
 import bilby
@@ -270,11 +269,11 @@ class Rosenbrock(bilby.Likelihood):
         super(Rosenbrock, self).__init__(parameters=parameters)
 
     def log_likelihood(self):
-        x = np.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
+        x = jnp.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
         y = 0
         for i in range(self.dim - 1):
-            y += (100 * np.power(x[i + 1] - np.power(x[i], 2), 2) +
-                  np.power(1 - x[i], 2))
+            y += (100 * jnp.power(x[i + 1] - jnp.power(x[i], 2), 2) +
+                  jnp.power(1 - x[i], 2))
         return -y
 
 
@@ -309,17 +308,17 @@ class Rastrigin(bilby.Likelihood):
         # Uniform priors are assumed
         priors = bilby.core.prior.PriorDict()
         priors.update({"x{0}".format(i): bilby.core.prior.Uniform(ranges[i][0], ranges[i][1], "x{0}".format(i)) for i in
-                       range(self.dim)})
+                       range(dimensionality)})
 
         self.priors = priors
 
         super(Rastrigin, self).__init__(parameters=parameters)
 
     def log_likelihood(self):
-        x = np.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
+        x = jnp.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
         y = self.a * self.dim
         for i in range(self.dim):
-            y += np.power(x[i], 2) - self.a * np.cos(2 * np.pi * x[i])
+            y += jnp.power(x[i], 2) - self.a * jnp.cos(2 * jnp.pi * x[i])
 
         return -y
 
@@ -337,8 +336,8 @@ class Himmelblau(bilby.Likelihood):
     def __init__(self):
         self.dim = 2
 
-        x_min = -5
-        x_max = 5
+        x_min = -6
+        x_max = 6
 
         ranges = []
         for i in range(self.dim):
@@ -357,8 +356,8 @@ class Himmelblau(bilby.Likelihood):
         super(Himmelblau, self).__init__(parameters=parameters)
 
     def log_likelihood(self):
-        x = np.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
-        y = np.power(np.power(x[0], 2) + x[1] - 11, 2) + np.power(x[0] + np.power(x[1], 2) - 7, 2)
+        x = jnp.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
+        y = jnp.power(jnp.power(x[0], 2) + x[1] - 11, 2) + jnp.power(x[0] + jnp.power(x[1], 2) - 7, 2)
         return -y
 
 
@@ -377,10 +376,10 @@ class EggBox(bilby.Likelihood):
             raise Exception("""Dimensionality of EggBox function has to
                             be >=2.""")
         self.dim = dimensionality
-        self.tmax = 5.0 * np.pi
+        self.tmax = 5.0 * jnp.pi
 
         x_min = 0.
-        x_max = 10. * np.pi
+        x_max = 10. * jnp.pi
 
         ranges = []
         for i in range(self.dim):
@@ -392,27 +391,28 @@ class EggBox(bilby.Likelihood):
         # Uniform priors are assumed
         priors = bilby.core.prior.PriorDict()
         priors.update({"x{0}".format(i): bilby.core.prior.Uniform(ranges[i][0], ranges[i][1], "x{0}".format(i)) for i in
-                       range(self.dim)})
+                       range(dimensionality)})
 
         self.priors = priors
 
         super(EggBox, self).__init__(parameters=parameters)
 
     def log_likelihood(self):
-        x = np.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
+        x = jnp.array([self.parameters["x{0}".format(i)] for i in range(self.dim)])
         y = 1
 
         for i in range(self.dim):
-            y *= math.cos(x[i] / 2)
-        y = math.pow(2. + y, 5)
+            y *= jnp.cos(x[i] / 2)
+        y = jnp.power(2. + y, 5)
+        # y = 5. * (2. + y)
         return y
 
 
 class GaussianShells(bilby.Likelihood):
     """
     N-dimensional GaussianShells as defined in arXiv:0809.3437.
-    Both number of dimensions and number of rings are arbitrary but we assume that have 
-    an equal radius and widths 
+    Both number of dimensions and number of rings are arbitrary but we assume that have
+    an equal radius and widths
 
     Args:
         dimensionality: Number of input dimensions the function should take.
@@ -448,7 +448,7 @@ class GaussianShells(bilby.Likelihood):
         # Uniform priors are assumed
         priors = bilby.core.prior.PriorDict()
         priors.update({"x{0}".format(i): bilby.core.prior.Uniform(ranges[i][0], ranges[i][1], "x{0}".format(i)) for i in
-                       range(self.dim)})
+                       range(dimensionality)})
 
         self.priors = priors
 
