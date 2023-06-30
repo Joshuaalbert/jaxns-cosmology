@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from jaxns_cosmology import install_jaxns_sampler
 # installs the Jaxns sampler
-from jaxns_cosmology.likelihoods import GaussianShells
+from jaxns_cosmology.likelihoods import GaussianShells, EggBox, Himmelblau, Rastrigin, Rosenbrock
 
 install_jaxns_sampler()
 
@@ -20,26 +20,30 @@ except ImportError:
 
 if __name__ == '__main__':
     # Output folders
-    outdir = 'outdir'
 
     # Functions are:
     # 6D-CMB, 12D-MSSM7, nD-Rosenbrock, nD-Rastrigin, 2D-Himmelblau, nD-EggBox, nD-GaussianShells
 
     # Input is the number of dimensions for nD functions
-    likelihood = GaussianShells(dimensionality=2)
-    priors = likelihood.priors
+    for likelihood in (Rastrigin(dimensionality=10), Rosenbrock(), GaussianShells(), EggBox(), Himmelblau()):
+        outdir = likelihood.__class__.__name__
+        priors = likelihood.priors
 
-    # And run sampler
-    # result = bilby.run_sampler(
-    #    likelihood=likelihood, priors=priors, sampler='dynamic_dynesty', npoints=1000,
-    #    outdir=outdir, label=label, bound='multi', sample='unif')
+        # And run sampler
+        # result = bilby.run_sampler(
+        #    likelihood=likelihood, priors=priors, sampler='dynamic_dynesty', npoints=1000,
+        #    outdir=outdir, label=label, bound='multi', sample='unif')
 
-    result = bilby.run_sampler(
-        likelihood=likelihood, priors=priors,
-        sampler='jaxns', outdir=outdir, label=likelihood.__class__.__name__)
+        result = bilby.run_sampler(
+            likelihood=likelihood,
+            priors=priors,
+            sampler='jaxns',
+            outdir=outdir,
+            label=likelihood.__class__.__name__
+        )
 
-    print(result.posterior)
+        # print(result.posterior)
 
-    result.plot_corner()
+        result.plot_corner()
 
-    plt.show()
+        plt.show()

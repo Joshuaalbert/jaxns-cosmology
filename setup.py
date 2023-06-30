@@ -19,7 +19,10 @@ def get_all_subdirs(top, *dirs):
 
 __minimum_jax_version__ = '0.2.9'
 
-setup_requires = ['jax>=' + __minimum_jax_version__]
+setup_requires = [
+    'jax>=' + __minimum_jax_version__,
+    'jaxns>=2.2.1'
+]
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

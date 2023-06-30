@@ -1,12 +1,14 @@
 import os
+from functools import cached_property
 
 import jax.numpy as jnp
 import numpy as np
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
-from jaxns import ExactNestedSampler as OrigNestedSampler, Prior, Model, TerminationCondition, resample, \
-    evidence_posterior_samples, summary, plot_diagnostics
+
+from jaxns import Prior, Model, TerminationCondition, resample, \
+    summary, plot_diagnostics, sample_evidence, ApproximateNestedSampler, UniformSampler, UniDimSliceSampler
 
 tfpd = tfp.distributions
 
@@ -15,7 +17,7 @@ class Jaxns(NestedSampler):
     default_kwargs = dict(
         use_jaxns_defaults=True,
         max_samples=1e6,
-        uncert_improvement_patience=3
+        patience=1
     )
 
     def __init__(
@@ -66,10 +68,8 @@ class Jaxns(NestedSampler):
         ndims = int(sum([self.tuple_prod(v.shape[1:]) for k, v in results.samples.items() if (k in vars)]))
         return ndims
 
-    def run_sampler(self):
-
-        # self._verify_kwargs_against_default_kwargs()
-
+    @cached_property
+    def model(self) -> Model:
         param_names = []
         for key in self.priors:
             param_names.append(self.priors[key].name)
@@ -77,9 +77,9 @@ class Jaxns(NestedSampler):
         # Jaxns requires loglikelihood function to have explicit signatures.
         local_dict = {}
         loglik_fn_def = """def loglik_fn({}):\n
-        \tparams = [{}]\n
-        \treturn self.log_likelihood(params)
-        """.format(
+                \tparams = [{}]\n
+                \treturn self.log_likelihood(params)
+                """.format(
             ", ".join([f"{name}" for name in param_names]),
             ", ".join([f"{name}" for name in param_names]),
         )
@@ -97,30 +97,63 @@ class Jaxns(NestedSampler):
 
         model = Model(prior_model=prior_model, log_likelihood=loglik_fn)
 
+        return model
+
+    def run_sampler(self):
+
+        # self._verify_kwargs_against_default_kwargs()
+        num_live_points_multiplier = int(jnp.interp(self.model.U_ndims,
+                                                    jnp.asarray([1., 10.]),
+                                                    jnp.asarray([20., 400.])))
+        num_slices_multiplier = int(jnp.interp(self.model.U_ndims,
+                                               jnp.asarray([1., 10.]),
+                                               jnp.asarray([2., 5.])))
+
+        num_live_points = self.model.U_ndims * num_live_points_multiplier
+        num_slices = self.model.U_ndims * num_slices_multiplier
+
         if self.kwargs['use_jaxns_defaults']:
             # Create the nested sampler class. In this case without any tuning.
-            ns = OrigNestedSampler(model=model,
-                                   num_live_points=model.U_ndims * 50,
-                                   max_samples=1e6,
-                                   uncert_improvement_patience=3)
+            ns = ApproximateNestedSampler(
+                model=self.model,
+                num_live_points=num_live_points,
+                num_parallel_samplers=1,
+                max_samples=1e6,
+                sampler_chain=[
+                    UniformSampler(model=self.model, efficiency_threshold=0.1),
+                    UniDimSliceSampler(model=self.model, num_slices=num_slices,
+                                       midpoint_shrink=True,
+                                       perfect=True)
+                ]
+            )
         else:
             jn_kwargs = self.kwargs.copy()
             jn_kwargs.pop('use_jaxns_defaults')
-            ns = OrigNestedSampler(model=model,
-                                   num_live_points=model.U_ndims * 50,
-                                   max_samples=1e6,
-                                   uncert_improvement_patience=3,
-                                   **jn_kwargs)
+            ns = ApproximateNestedSampler(
+                model=self.model,
+                num_live_points=num_live_points,
+                num_parallel_samplers=1,
+                max_samples=1e6,
+                sampler_chain=[
+                    UniformSampler(model=self.model, efficiency_threshold=0.1),
+                    UniDimSliceSampler(model=self.model, num_slices=num_slices,
+                                       midpoint_shrink=True,
+                                       perfect=True)
+                ],
+                **jn_kwargs
+            )
 
-        term_cond = TerminationCondition(live_evidence_frac=1e-4)
+        term_cond = TerminationCondition(live_evidence_frac=1e-5)
 
         termination_reason, state = ns(key=random.PRNGKey(42424242), term_cond=term_cond)
         results = ns.to_results(state=state, termination_reason=termination_reason)
 
-        log_Z = evidence_posterior_samples(key=state.key,
-                                           num_live_points_per_sample=results.num_live_points_per_sample,
-                                           log_L_samples=results.log_L_samples,
-                                           S=1000)
+        log_Z = sample_evidence(
+            key=state.key,
+            num_live_points_per_sample=results.num_live_points_per_sample,
+            log_L_samples=results.log_L_samples,
+            S=1000
+        )
         log_Z_mean = jnp.nanmean(log_Z)
         log_Z_std = jnp.nanstd(log_Z)
         results = results._replace(
@@ -158,8 +191,8 @@ class Jaxns(NestedSampler):
         log_p = results.log_dp_mean[:nsamples]
         log_p = jnp.exp(log_p)
         # log_L = jnp.where(jnp.isfinite(log_L), log_L, -jnp.inf)
-
-        samples = resample(random.PRNGKey(42), results.samples, results.log_dp_mean, S=int(results.ESS))
+        samples = resample(random.PRNGKey(42), results.samples, results.log_dp_mean,
+                           S=max(self.model.U_ndims * 1000, int(results.ESS)))
 
         # l = []
         # lkeys = ['weights', 'log_likelihood']
