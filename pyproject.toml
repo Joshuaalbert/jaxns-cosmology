@@ -1,6 +1,18 @@
 [build-system]
 requires = [
     "setuptools>=42",
-    "wheel"
+    "wheel",
+    "jaxns>=2.2.1",
+    "jax",
+    "jaxlib",
+    "etils",
+    "bilby",
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "pytest",
+    "tensorflow",
+    "tensorflow_probability",
+    "arviz"
 ]
 build-backend = "setuptools.build_meta"

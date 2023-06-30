@@ -17,11 +17,19 @@ def get_all_subdirs(top, *dirs):
     return data_dir
 
 
-__minimum_jax_version__ = '0.2.9'
-
 setup_requires = [
-    'jax>=' + __minimum_jax_version__,
-    'jaxns>=2.2.1'
+    "jaxns>=2.2.1",
+    "jax",
+    "jaxlib",
+    "etils",
+    "bilby",
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "pytest",
+    "tensorflow",
+    "tensorflow_probability",
+    "arviz"
 ]
 
 with open("README.md", "r") as fh:
