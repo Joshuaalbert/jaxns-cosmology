@@ -104,13 +104,14 @@ class Jaxns(NestedSampler):
         # self._verify_kwargs_against_default_kwargs()
         num_live_points_multiplier = int(jnp.interp(self.model.U_ndims,
                                                     jnp.asarray([1., 10.]),
-                                                    jnp.asarray([20., 400.])))
+                                                    jnp.asarray([20., 200.])))
         num_slices_multiplier = int(jnp.interp(self.model.U_ndims,
                                                jnp.asarray([1., 10.]),
                                                jnp.asarray([2., 5.])))
-
         num_live_points = self.model.U_ndims * num_live_points_multiplier
         num_slices = self.model.U_ndims * num_slices_multiplier
+
+        print(f"num_slices: {num_slices}, num_live_points: {num_live_points}")
 
         if self.kwargs['use_jaxns_defaults']:
             # Create the nested sampler class. In this case without any tuning.
