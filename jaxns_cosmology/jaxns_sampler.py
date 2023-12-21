@@ -1,14 +1,15 @@
 import os
 from functools import cached_property
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
 
-from jaxns import Prior, Model, TerminationCondition, resample, \
-    summary, plot_diagnostics, sample_evidence, ApproximateNestedSampler, UniformSampler, UniDimSliceSampler
+from jaxns import sample_evidence, summary, plot_diagnostics, DefaultNestedSampler, resample, Prior, Model, \
+    plot_cornerplot
 
 tfpd = tfp.distributions
 
@@ -16,8 +17,7 @@ tfpd = tfp.distributions
 class Jaxns(NestedSampler):
     default_kwargs = dict(
         use_jaxns_defaults=True,
-        max_samples=1e6,
-        patience=1
+        max_samples=1e6
     )
 
     def __init__(
@@ -102,51 +102,27 @@ class Jaxns(NestedSampler):
     def run_sampler(self):
 
         # self._verify_kwargs_against_default_kwargs()
-        num_live_points_multiplier = int(jnp.interp(self.model.U_ndims,
-                                                    jnp.asarray([1., 10.]),
-                                                    jnp.asarray([20., 200.])))
-        num_slices_multiplier = int(jnp.interp(self.model.U_ndims,
-                                               jnp.asarray([1., 10.]),
-                                               jnp.asarray([2., 5.])))
-        num_live_points = self.model.U_ndims * num_live_points_multiplier
-        num_slices = self.model.U_ndims * num_slices_multiplier
-
-        print(f"num_slices: {num_slices}, num_live_points: {num_live_points}")
 
         if self.kwargs['use_jaxns_defaults']:
             # Create the nested sampler class. In this case without any tuning.
-            ns = ApproximateNestedSampler(
+            ns = DefaultNestedSampler(
                 model=self.model,
-                num_live_points=num_live_points,
-                num_parallel_samplers=1,
                 max_samples=1e6,
-                sampler_chain=[
-                    UniformSampler(model=self.model, efficiency_threshold=0.1),
-                    UniDimSliceSampler(model=self.model, num_slices=num_slices,
-                                       midpoint_shrink=True,
-                                       perfect=True)
-                ]
+                parameter_estimation=True,
+                difficult_model=True
             )
         else:
             jn_kwargs = self.kwargs.copy()
             jn_kwargs.pop('use_jaxns_defaults')
-            ns = ApproximateNestedSampler(
+            ns = DefaultNestedSampler(
                 model=self.model,
-                num_live_points=num_live_points,
-                num_parallel_samplers=1,
                 max_samples=1e6,
-                sampler_chain=[
-                    UniformSampler(model=self.model, efficiency_threshold=0.1),
-                    UniDimSliceSampler(model=self.model, num_slices=num_slices,
-                                       midpoint_shrink=True,
-                                       perfect=True)
-                ],
+                parameter_estimation=True,
+                difficult_model=True,
                 **jn_kwargs
             )
 
-        term_cond = TerminationCondition(live_evidence_frac=1e-5)
-
-        termination_reason, state = ns(key=random.PRNGKey(42424242), term_cond=term_cond)
+        termination_reason, state = jax.jit(ns)(key=random.PRNGKey(42424242))
         results = ns.to_results(state=state, termination_reason=termination_reason)
 
         log_Z = sample_evidence(
@@ -164,7 +140,7 @@ class Jaxns(NestedSampler):
         os.makedirs(self.outdir, exist_ok=True)
         summary(results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
         plot_diagnostics(results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
-        # plot_cornerplot(results)
+        plot_cornerplot(results)
 
         self._generate_result(results)
         # self.result.sampling_time = self.sampling_time

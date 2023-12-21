@@ -1,0 +1,20 @@
+--------
+Termination Conditions:
+Small remaining evidence
+--------
+likelihood evals: 171980
+samples: 3800
+phantom samples: 2200
+likelihood evals / sample: 45.3
+phantom fraction (%): 57.9%
+--------
+logZ=-6.1 +- 0.21
+H=-5.05
+ESS=217
+--------
+x0: mean +- std.dev. | 10%ile / 50%ile / 90%ile | MAP est. | max(L) est.
+x0: 1.1 +- 2.9 | -2.9 / 3.0 / 3.6 | 3.0 | 3.0
+--------
+x1: mean +- std.dev. | 10%ile / 50%ile / 90%ile | MAP est. | max(L) est.
+x1: 1.1 +- 2.2 | -2.0 / 2.0 / 3.2 | 2.0 | 2.0
+--------

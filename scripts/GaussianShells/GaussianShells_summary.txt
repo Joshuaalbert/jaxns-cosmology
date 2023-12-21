@@ -1,0 +1,21 @@
+--------
+Termination Conditions:
+Small remaining evidence
+All live-points are on a single plateau (potential numerical errors, consider 64-bit)
+--------
+likelihood evals: 198797
+samples: 2900
+phantom samples: 1600
+likelihood evals / sample: 68.6
+phantom fraction (%): 55.2%
+--------
+logZ=-1.99 +- 0.17
+H=-2.87
+ESS=83
+--------
+x0: mean +- std.dev. | 10%ile / 50%ile / 90%ile | MAP est. | max(L) est.
+x0: -0.6 +- 3.9 | -5.3 / -1.8 / 5.2 | 5.5 | -5.3
+--------
+x1: mean +- std.dev. | 10%ile / 50%ile / 90%ile | MAP est. | max(L) est.
+x1: -0.1 +- 1.4 | -1.8 / -0.3 / 1.9 | -0.0 | 0.9
+--------
