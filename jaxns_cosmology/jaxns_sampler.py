@@ -103,6 +103,11 @@ class Jaxns(NestedSampler):
 
         # self._verify_kwargs_against_default_kwargs()
 
+        if 'live_evidence_frac' in self.kwargs:
+            term_cond = TerminationCondition(live_evidence_frac=self.kwargs.pop('live_evidence_frac'))
+        else:
+            term_cond = TerminationCondition()
+
         if self.kwargs['use_jaxns_defaults']:
             # Create the nested sampler class. In this case without any tuning.
             ns = DefaultNestedSampler(
@@ -124,8 +129,9 @@ class Jaxns(NestedSampler):
 
         termination_reason, state = jax.jit(ns)(
             key=random.PRNGKey(42424242),
-            term_cond=TerminationCondition(live_evidence_frac=1e-6)
+            term_cond=term_cond
         )
+
         results = ns.to_results(state=state, termination_reason=termination_reason)
 
         log_Z = sample_evidence(
