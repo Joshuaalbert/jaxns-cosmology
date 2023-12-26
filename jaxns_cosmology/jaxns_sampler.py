@@ -18,6 +18,8 @@ class Jaxns(NestedSampler):
     default_kwargs = dict(
         use_jaxns_defaults=True,
         max_samples=1e6
+        # can also set live_evidence_frac
+        # can also set c
     )
 
     def __init__(
