@@ -9,7 +9,7 @@ from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
 
 from jaxns import sample_evidence, summary, plot_diagnostics, DefaultNestedSampler, resample, Prior, Model, \
-    plot_cornerplot
+    plot_cornerplot, TerminationCondition
 
 tfpd = tfp.distributions
 
@@ -122,7 +122,10 @@ class Jaxns(NestedSampler):
                 **jn_kwargs
             )
 
-        termination_reason, state = jax.jit(ns)(key=random.PRNGKey(42424242))
+        termination_reason, state = jax.jit(ns)(
+            key=random.PRNGKey(42424242),
+            term_cond=TerminationCondition(live_evidence_frac=1e-6)
+        )
         results = ns.to_results(state=state, termination_reason=termination_reason)
 
         log_Z = sample_evidence(
