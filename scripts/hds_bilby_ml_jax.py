@@ -25,7 +25,14 @@ if __name__ == '__main__':
     # 6D-CMB, 12D-MSSM7, nD-Rosenbrock, nD-Rastrigin, 2D-Himmelblau, nD-EggBox, nD-GaussianShells
 
     # Input is the number of dimensions for nD functions
-    for likelihood in (Rastrigin(dimensionality=10), Rosenbrock(), GaussianShells(), EggBox(), Himmelblau()):
+    likelihood_functions = [
+        # Rastrigin(dimensionality=10),
+        # Rosenbrock(dimensionality=10),
+        # GaussianShells(),
+        EggBox(dimensionality=10),
+        # Himmelblau()
+    ]
+    for likelihood in likelihood_functions:
         outdir = likelihood.__class__.__name__
         priors = likelihood.priors
 

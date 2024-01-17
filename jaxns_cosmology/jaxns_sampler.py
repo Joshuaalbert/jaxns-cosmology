@@ -7,7 +7,6 @@ import numpy as np
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
-
 from jaxns import sample_evidence, summary, plot_diagnostics, DefaultNestedSampler, resample, Prior, Model, \
     plot_cornerplot, TerminationCondition
 
@@ -115,8 +114,9 @@ class Jaxns(NestedSampler):
             ns = DefaultNestedSampler(
                 model=self.model,
                 max_samples=1e6,
-                parameter_estimation=True,
-                difficult_model=True
+                s=self.model.U_ndims*5,
+                c=self.model.U_ndims*100,
+                k=self.model.U_ndims
             )
         else:
             jn_kwargs = self.kwargs.copy()
@@ -140,13 +140,11 @@ class Jaxns(NestedSampler):
             key=state.key,
             num_live_points_per_sample=results.num_live_points_per_sample,
             log_L_samples=results.log_L_samples,
-            S=1000
+            S=5000
         )
         log_Z_mean = jnp.nanmean(log_Z)
-        log_Z_std = jnp.nanstd(log_Z)
         results = results._replace(
             log_Z_mean=jnp.where(jnp.isnan(log_Z_mean), results.log_Z_mean, log_Z_mean),
-            log_Z_uncert=jnp.where(jnp.isnan(log_Z_std), results.log_Z_uncert, log_Z_std)
         )
         os.makedirs(self.outdir, exist_ok=True)
         summary(results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
@@ -168,35 +166,10 @@ class Jaxns(NestedSampler):
         self.result.log_evidence = np.asarray(results.log_Z_mean)
         self.result.log_evidence_err = np.asarray(results.log_Z_uncert)
 
-        rkey0 = random.PRNGKey(123496)
-        vars = self._get_vars(results, vars)
-        ndims = self._get_ndims(results, vars)
-
-        nsamples = results.total_num_samples
-        max_like_idx = jnp.argmax(results.log_L_samples[:nsamples])
-        map_idx = jnp.argmax(results.log_dp_mean)
-        log_L = results.log_L_samples[:nsamples]
-        log_p = results.log_dp_mean[:nsamples]
-        log_p = jnp.exp(log_p)
-        # log_L = jnp.where(jnp.isfinite(log_L), log_L, -jnp.inf)
         samples = resample(random.PRNGKey(42), results.samples, results.log_dp_mean,
                            S=max(self.model.U_ndims * 1000, int(results.ESS)))
 
-        # l = []
-        # lkeys = ['weights', 'log_likelihood']
-        # l.append(log_p.reshape(nsamples, -1))
-        # l.append(log_L.reshape(nsamples, -1))
-        # for key in vars:
-        #     samples = results.samples[key][:nsamples, ...].reshape((nsamples, -1))
-        #     l.append(samples)
-        #     lkeys.append(key)
-        # samples_row = np.asarray(jnp.stack(l).squeeze(-1).T)
-        #
-        # nested_samples = DataFrame(samples_row, columns=lkeys)
-        # self.result.nested_samples = nested_samples
-
         self.result.num_likelihood_evaluations = np.asarray(results.total_num_likelihood_evaluations)
-        # self.result.log_likelihood_evaluations = results.log_efficiency
 
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
