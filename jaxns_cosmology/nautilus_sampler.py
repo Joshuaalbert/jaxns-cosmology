@@ -93,6 +93,7 @@ class Nautilus(NestedSampler):
         for key in _keys:
             prior.add_parameter(key, dist=(0., 1.))
         self._num_likelihood_evals = 0
+
         def likelihood(param_dict):
             self._num_likelihood_evals += 1
             self.likelihood.parameters = param_dict
@@ -102,12 +103,8 @@ class Nautilus(NestedSampler):
 
         use_nautilus_defaults = self.kwargs.pop('use_nautilus_defaults', False)
 
-        if use_nautilus_defaults:
-            # Create the nested sampler class. In this case without any tuning.
-            sampler = Sampler(prior, likelihood, **self.kwargs)
-        else:
-            jn_kwargs = self.kwargs.copy()
-            sampler = Sampler(prior, likelihood, **jn_kwargs)
+        # Create the nested sampler class. In this case without any tuning.
+        sampler = Sampler(prior, likelihood, **self.kwargs)
 
         t0 = time.time()
         sampler.run(verbose=True, discard_exploration=discard_exploration)

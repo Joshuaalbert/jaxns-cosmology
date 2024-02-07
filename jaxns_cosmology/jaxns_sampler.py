@@ -154,10 +154,11 @@ class Jaxns(NestedSampler):
         )
         os.makedirs(self.outdir, exist_ok=True)
         summary(ns_results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
-        # with plt.ion():
+        current_backend = plt.get_backend()
+        plt.switch_backend('Agg')  # Will not display plots
         plot_diagnostics(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
         plot_cornerplot(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_cornerplot.png"))
-        # plt.close('all')
+        plt.switch_backend(current_backend)  # Switch back to the original backend (if there was one)
 
         self._generate_result(ns_results)
         self.result.sampling_time = sampling_time
