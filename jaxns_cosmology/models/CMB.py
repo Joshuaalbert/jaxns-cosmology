@@ -98,8 +98,7 @@ def build_CMB_model() -> Model:
     # Use it inside the log_likelihood function
 
     def prior_model():
-        x = yield Prior(tfpd.Uniform(low=jnp.array([0.954, 1.037, 0.02, 0.1, 0.05, 3.05]),
-                                     high=jnp.array([0.966, 1.042, 0.0226, 0.14, 0.097, 3.16])), name='x')
+        x = yield Prior(tfpd.Uniform(low=jnp.zeros(6), high=jnp.ones(6)), name='x')
         return x
 
     def log_likelihood(x: jnp.ndarray):
@@ -111,6 +110,11 @@ def build_CMB_model() -> Model:
         @tf.function
         def predict(x):
             return restored(x, training=False)
+
+        x_min = jnp.array([0.954, 1.037, 0.02, 0.1, 0.05, 3.05])
+        x_max = jnp.array([0.966, 1.042, 0.0226, 0.14, 0.097, 3.16])
+
+        x = x * (x_max - x_min) + x_min
 
         # Convert to JAX function
         jax_func, jax_params = tf2jax.convert(predict, jnp.zeros((1, 6), jnp.float32))

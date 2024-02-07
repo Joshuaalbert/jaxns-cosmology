@@ -125,7 +125,7 @@ class Experiment:
             for past_run in past_runs:
                 if not os.path.exists(os.path.join(past_run, f"{model_name}_experiment_result.json")):
                     continue
-                with open(os.path.join(past_run, f"{model_name}_experiment_result.json"),'r') as f:
+                with open(os.path.join(past_run, f"{model_name}_experiment_result.json"), 'r') as f:
                     result = ExperimentResult.parse_raw(f.read())
                     same = all(params.get(k, None) == v for k, v in result.params.items())
                 if same:
@@ -157,3 +157,13 @@ class Experiment:
             t = time.time() - t0
 
             print(f"Model {model_name} took {t} seconds to run")
+
+        results = []
+        for filename in glob.glob(os.path.join(main_dir, self.sampler, f"{self.sampler}_experiment_result.json")):
+            with open(filename, "r") as f:
+                results.append((filename, ExperimentResult.parse_raw(f.read())))
+
+        # sort by likelihood evals and print
+        results = sorted(results, key=lambda x: x[1].likelihood_evals)
+        for filename, result in results:
+            print(f"{filename}: {result.likelihood_evals} likelihood evals")

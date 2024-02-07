@@ -3,7 +3,6 @@ import time
 
 import jax
 import numpy as np
-import pylab as plt
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
@@ -110,11 +109,9 @@ class Jaxns(NestedSampler):
 
         os.makedirs(self.outdir, exist_ok=True)
         summary(ns_results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
-        current_backend = plt.get_backend()
-        plt.switch_backend('Agg')  # Will not display plots
+
         plot_diagnostics(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
         plot_cornerplot(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_cornerplot.png"))
-        plt.switch_backend(current_backend)  # Switch back to the original backend (if there was one)
 
         self._generate_result(ns_results, model)
         self.result.sampling_time = sampling_time

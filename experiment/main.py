@@ -1,10 +1,15 @@
+from jax import config
+config.update("jax_enable_x64", True)
+
+import matplotlib
+
+matplotlib.use('Agg')
+
 import os
 import sys
 
 # Set export CUDA_VISIBLE_DEVICES=""
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-os.environ['JAX_PLATFORM_NAME'] = 'cpu'
-os.environ['JAX_ENABLE_x64'] = 'True'
 
 from concurrent import futures
 from typing import TypeVar, Callable
@@ -76,9 +81,9 @@ def jaxns_models_and_parameters():
                     ),
                     model=model
                 )
-                # if key == 'MSSM7':
-                #     params['term_params']['dlogZ'] = 1e-5
-                #     params['k'] = model.U_ndims // 2 # to prevent using up all the samples (virtual ones)
+                if key == 'MSSM7':
+                    params['term_params']['dlogZ'] = 1e-6
+                    # params['k'] = model.U_ndims // 2 # to prevent using up all the samples (virtual ones)
                 yield key, model, params
 
 
