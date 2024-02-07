@@ -1,16 +1,13 @@
 import os
 import time
-from functools import cached_property
 
 import jax
-import jax.numpy as jnp
 import numpy as np
 import pylab as plt
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
-from jaxns import sample_evidence, summary, plot_diagnostics, DefaultNestedSampler, resample, Prior, Model, \
-    plot_cornerplot, TerminationCondition
+from jaxns import summary, plot_diagnostics, DefaultNestedSampler, resample, plot_cornerplot, TerminationCondition
 
 tfpd = tfp.distributions
 
@@ -80,37 +77,6 @@ class Jaxns(NestedSampler):
         ndims = int(sum([self.tuple_prod(v.shape[1:]) for k, v in results.samples.items() if (k in vars)]))
         return ndims
 
-    @cached_property
-    def model(self) -> Model:
-        param_names = []
-        for key in self.priors:
-            param_names.append(self.priors[key].name)
-
-        # Jaxns requires loglikelihood function to have explicit signatures.
-        local_dict = {}
-        loglik_fn_def = """def loglik_fn({}):\n
-                \tparams = [{}]\n
-                \treturn self.log_likelihood(params)
-                """.format(
-            ", ".join([f"{name}" for name in param_names]),
-            ", ".join([f"{name}" for name in param_names]),
-        )
-
-        exec(loglik_fn_def, locals(), local_dict)
-        loglik_fn = local_dict["loglik_fn"]
-
-        def prior_model():
-            params = []
-            for key in self.priors:
-                param = yield Prior(tfpd.Uniform(low=self.priors[key].minimum, high=self.priors[key].maximum),
-                                    name=self.priors[key].name)
-                params.append(param)
-            return tuple(params)
-
-        model = Model(prior_model=prior_model, log_likelihood=loglik_fn)
-
-        return model
-
     def run_sampler(self):
 
         # self._verify_kwargs_against_default_kwargs()
@@ -142,16 +108,6 @@ class Jaxns(NestedSampler):
 
         ns_results = ns.to_results(state=state, termination_reason=termination_reason, trim=True)
 
-        log_Z = sample_evidence(
-            key=state.key,
-            num_live_points_per_sample=ns_results.num_live_points_per_sample,
-            log_L_samples=ns_results.log_L_samples,
-            S=5000
-        )
-        log_Z_mean = jnp.nanmean(log_Z)
-        ns_results = ns_results._replace(
-            log_Z_mean=jnp.where(jnp.isnan(log_Z_mean), ns_results.log_Z_mean, log_Z_mean),
-        )
         os.makedirs(self.outdir, exist_ok=True)
         summary(ns_results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
         current_backend = plt.get_backend()
@@ -160,12 +116,12 @@ class Jaxns(NestedSampler):
         plot_cornerplot(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_cornerplot.png"))
         plt.switch_backend(current_backend)  # Switch back to the original backend (if there was one)
 
-        self._generate_result(ns_results)
+        self._generate_result(ns_results, model)
         self.result.sampling_time = sampling_time
 
         return self.result
 
-    def _generate_result(self, ns_results, vars=None):
+    def _generate_result(self, ns_results, model, vars=None):
 
         try:
             import arviz as az
@@ -176,7 +132,7 @@ class Jaxns(NestedSampler):
         self.result.log_evidence_err = np.asarray(ns_results.log_Z_uncert)
 
         samples = resample(random.PRNGKey(42), ns_results.samples, ns_results.log_dp_mean,
-                           S=max(self.model.U_ndims * 1000, int(ns_results.ESS)))
+                           S=max(model.U_ndims * 1000, int(ns_results.ESS)))
 
         self.result.num_likelihood_evaluations = np.asarray(ns_results.total_num_likelihood_evaluations)
 

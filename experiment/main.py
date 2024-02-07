@@ -70,7 +70,7 @@ def jaxns_models_and_parameters():
                     s=s,
                     term_params=dict(
                         dlogZ=1e-4,
-                        max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                        # max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
                     ),
                     model=model
                 )
