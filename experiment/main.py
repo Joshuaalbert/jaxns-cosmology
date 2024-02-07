@@ -3,6 +3,8 @@ import sys
 
 # Set export CUDA_VISIBLE_DEVICES=""
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ['JAX_PLATFORM_NAME'] = 'cpu'
+os.environ['JAX_ENABLE_x64'] = 'True'
 
 from concurrent import futures
 from typing import TypeVar, Callable
