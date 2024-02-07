@@ -21,3 +21,24 @@ conda create -n jaxns_cosmology_py python=3.10
 conda activate jaxns_cosmology_py
 pip install -r requirements.txt
 ```
+
+#### Compile and install pymultinest and pypolychord
+
+
+```bash
+sudo apt install liblapack-dev libblas-dev openmpi-*
+
+git clone https://github.com/JohannesBuchner/MultiNest
+cd MultiNest/build
+cmake ..
+make
+
+git clone https://github.com/PolyChord/PolyChordLite.git
+cd PolyChordLite
+make MPI=0
+pip install .
+
+# Test the installation
+python -c 'import pymultinest'
+python -c 'import pypolychord'
+```

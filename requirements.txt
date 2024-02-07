@@ -1,4 +1,4 @@
-jaxns>=2.4.8
+jaxns==2.4.8
 jax
 jaxlib
 etils
@@ -7,7 +7,6 @@ matplotlib
 numpy
 scipy
 pytest
-tensorflow
 tensorflow_probability
 arviz
 nessai
