@@ -50,7 +50,7 @@ tfpd = tfp.distributions
 #         y = math.pow(2. + y, 5)
 #         return y
 
-def build_eggbox_model(ndim: int):
+def build_eggbox_model(ndim: int) -> Model:
     """
     Builds the eggbox model.
 
@@ -58,7 +58,7 @@ def build_eggbox_model(ndim: int):
         ndim:  The number of dimensions of the eggbox function.
 
     Returns:
-        forward: A function that takes a flat array of i.i.d. samples of U[0,1] and returns the eggbox function.
+        model: The eggbox model.
     """
     def prior_model():
         z = yield Prior(tfpd.Uniform(low=jnp.zeros(ndim), high=10. * jnp.pi * jnp.ones(ndim)), name='z')
@@ -73,5 +73,4 @@ def build_eggbox_model(ndim: int):
 
     model = Model(prior_model=prior_model,
                   log_likelihood=log_likelihood)
-    forward = jax.jit(lambda U: model.forward(U=U, allow_nan=True))
-    return forward
+    return model

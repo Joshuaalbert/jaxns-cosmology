@@ -51,7 +51,7 @@ tfpd = tfp.distributions
 #                   np.power(1 - x[i], 2))
 #         return -y
 
-def build_rosenbrock_model(ndim: int):
+def build_rosenbrock_model(ndim: int) -> Model:
     """
     Builds the Rosenbrock model.
 
@@ -59,8 +59,7 @@ def build_rosenbrock_model(ndim: int):
         ndim: Number of input dimensions the function should take.
 
     Returns:
-        forward: A function that takes a flat array of `U_ndims` i.i.d. samples of U[0,1] and returns the likelihood
-            conditional variables.
+        model: The Rosenbrock model.
     """
 
     def prior_model():
@@ -75,5 +74,4 @@ def build_rosenbrock_model(ndim: int):
 
     model = Model(prior_model=prior_model, log_likelihood=log_likelihood)
 
-    forward = jax.jit(lambda U: model.forward(U, allow_nan=True))
-    return forward
+    return model

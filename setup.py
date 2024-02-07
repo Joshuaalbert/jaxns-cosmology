@@ -18,7 +18,7 @@ def get_all_subdirs(top, *dirs):
 
 
 setup_requires = [
-    "jaxns>=2.2.1",
+    "jaxns>=2.4.8",
     "jax",
     "jaxlib",
     "etils",
@@ -27,7 +27,6 @@ setup_requires = [
     "numpy",
     "scipy",
     "pytest",
-    "tensorflow",
     "tensorflow_probability",
     "arviz"
 ]
@@ -47,6 +46,9 @@ setup(name='jaxns_cosmology',
       tests_require=[
           'pytest>=2.8',
       ],
+package_data={
+          'jaxns_cosmology': sum([get_all_subdirs('jaxns_cosmology', 'models', 'ml_functions')], [])
+      },
       package_dir={'': './'},
       packages=find_packages('./'),
       classifiers=[

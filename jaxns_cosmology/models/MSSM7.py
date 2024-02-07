@@ -73,15 +73,13 @@ tfpd = tfp.distributions
 #         y = self._unnormalise(y, self.y_mean, self.y_stdev)
 #         return y[0][0]
 
-def build_MSSM7_model():
+def build_MSSM7_model() -> Model:
     """
     Builds the MSSM7 model.
 
-    Args:
-        saved_model_file: The path to the TF saved model file.
 
     Returns:
-        forward: A function that takes a flat array of `U_ndims` i.i.d. samples of U[0,1] and returns the log-likelihood
+        model: The MSSM7 model.
     """
 
     # Load SavedModel, and use tf2jax to convert it to a JAX function
@@ -108,7 +106,6 @@ def build_MSSM7_model():
         def predict(x):
             return restored(x, training=False)
 
-
         # Load SavedModel
         jax_func, jax_params = tf2jax.convert(predict, jnp.zeros((1, 12), jnp.float32))
 
@@ -128,7 +125,4 @@ def build_MSSM7_model():
         return -y.reshape(())
 
     model = Model(prior_model=prior_model, log_likelihood=log_likelihood)
-
-    forward = jax.jit(lambda U: model.forward(U, allow_nan=True))
-
-    return forward
+    return model

@@ -86,15 +86,12 @@ tfpd = tfp.distributions
 #         #  return -(y[0][0] - 0.28*y[0][0])
 #         return -y[0][0]
 
-def build_CMB_model():
+def build_CMB_model() -> Model:
     """
     Builds the CMB model.
 
-    Args:
-        saved_model_file: The path to the TF saved model file.
-
     Returns:
-        forward: A function that takes a flat array of `U_ndims` i.i.d. samples of U[0,1] and returns the log-likelihood
+        model: The CMB model.
     """
 
     # Load hdf5 model, and use tf2jax to convert it to a JAX function
@@ -158,6 +155,4 @@ def build_CMB_model():
 
     model = Model(prior_model=prior_model, log_likelihood=log_likelihood)
 
-    forward = jax.jit(lambda U: model.forward(U, allow_nan=True))
-
-    return forward
+    return model

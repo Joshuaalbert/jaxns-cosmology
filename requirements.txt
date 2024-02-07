@@ -1,4 +1,4 @@
-jaxns==2.4.4
+jaxns>=2.4.8
 jax
 jaxlib
 etils
@@ -10,3 +10,12 @@ pytest
 tensorflow
 tensorflow_probability
 arviz
+nessai
+pyyaml
+h5py
+pydantic
+nautilus-sampler
+ultranest
+dynesty
+pymultinest
+git+https://github.com/PolyChord/PolyChordLite@master

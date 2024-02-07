@@ -1,4 +1,3 @@
-import jax
 import jax.numpy as jnp
 import tensorflow_probability.substrates.jax as tfp
 from jaxns import Model, Prior
@@ -47,7 +46,7 @@ tfpd = tfp.distributions
 #         y = np.log(gauss_1 + gauss_2)
 #         return y
 
-def build_spikeslab_model(ndim: int):
+def build_spikeslab_model(ndim: int) -> Model:
     """
     Builds the SpokeSlab model.
 
@@ -55,12 +54,11 @@ def build_spikeslab_model(ndim: int):
         ndim: Number of input dimensions the function should take.
 
     Returns:
-        forward: A function that takes a flat array of `U_ndims` i.i.d. samples of U[0,1] and returns the likelihood
-            conditional variables.
+        model: The SpokeSlab model.
     """
 
     def prior_model():
-        z = yield Prior(tfpd.Uniform(low=-4 * jnp.ones(ndim), high=8 * jnp.ones(ndim)), name='z')
+        z = yield Prior(tfpd.Uniform(low=-4. * jnp.ones(ndim), high=8. * jnp.ones(ndim)), name='z')
         return z
 
     def log_likelihood(z):
@@ -71,12 +69,11 @@ def build_spikeslab_model(ndim: int):
             mean_2 = jnp.append(mean_2, 0.)
         cov_1 = 0.08 * jnp.eye(ndim)
         cov_2 = 0.8 * jnp.eye(ndim)
-        gauss_1 = tfp.distributions.MultivariateNormalFullCovariance(loc=mean_1, covariance_matrix=cov_1).prob(z)
-        gauss_2 = tfp.distributions.MultivariateNormalFullCovariance(loc=mean_2, covariance_matrix=cov_2).prob(z)
-        y = jnp.log(gauss_1 + gauss_2)
+        gauss_1 = tfp.distributions.MultivariateNormalFullCovariance(loc=mean_1, covariance_matrix=cov_1).log_prob(z)
+        gauss_2 = tfp.distributions.MultivariateNormalFullCovariance(loc=mean_2, covariance_matrix=cov_2).log_prob(z)
+        y = jnp.logaddexp(gauss_1, gauss_2)
         return y
 
     model = Model(prior_model=prior_model, log_likelihood=log_likelihood)
 
-    forward = jax.jit(lambda U: model.forward(U, allow_nan=True))
-    return forward
+    return model

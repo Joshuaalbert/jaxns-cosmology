@@ -1,9 +1,11 @@
 import os
+import time
 from functools import cached_property
 
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pylab as plt
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
 from jax import random, tree_map
@@ -16,9 +18,18 @@ tfpd = tfp.distributions
 class Jaxns(NestedSampler):
     default_kwargs = dict(
         use_jaxns_defaults=True,
-        max_samples=1e6
-        # can also set live_evidence_frac
-        # can also set c
+        max_samples=1e7,
+        num_live_points=None,
+        s=None,
+        k=None,
+        c=None,
+        num_parallel_workers=1,
+        difficult_model=True,
+        parameter_estimation=False,
+        init_efficiency_threshold=0.1,
+        verbose=False,
+        term_params=dict(),
+        model=None
     )
 
     def __init__(
@@ -104,72 +115,69 @@ class Jaxns(NestedSampler):
 
         # self._verify_kwargs_against_default_kwargs()
 
-        if 'live_evidence_frac' in self.kwargs:
-            term_cond = TerminationCondition(live_evidence_frac=self.kwargs.pop('live_evidence_frac'))
-        else:
-            term_cond = TerminationCondition()
+        if 'model' not in self.kwargs:
+            raise ValueError(f"Model not found in kwargs. Please provide a model.")
 
-        if self.kwargs['use_jaxns_defaults']:
-            # Create the nested sampler class. In this case without any tuning.
-            ns = DefaultNestedSampler(
-                model=self.model,
-                max_samples=1e6,
-                s=self.model.U_ndims*5,
-                c=self.model.U_ndims*100,
-                k=self.model.U_ndims
-            )
-        else:
-            jn_kwargs = self.kwargs.copy()
-            jn_kwargs.pop('use_jaxns_defaults')
-            ns = DefaultNestedSampler(
-                model=self.model,
-                max_samples=1e6,
-                parameter_estimation=True,
-                difficult_model=True,
-                **jn_kwargs
-            )
+        model = self.kwargs.pop('model')
 
+        if 'term_params' in self.kwargs:
+            term_cond = TerminationCondition(**self.kwargs.pop('term_params'))
+        else:
+            term_cond = None
+
+        self.kwargs.pop('use_jaxns_defaults')
+
+        jn_kwargs = self.kwargs.copy()
+        ns = DefaultNestedSampler(
+            model=model,
+            **jn_kwargs
+        )
+
+        t0 = time.time()
         termination_reason, state = jax.jit(ns)(
             key=random.PRNGKey(42424242),
             term_cond=term_cond
         )
+        sampling_time = time.time() - t0
 
-        results = ns.to_results(state=state, termination_reason=termination_reason)
+        ns_results = ns.to_results(state=state, termination_reason=termination_reason, trim=True)
 
         log_Z = sample_evidence(
             key=state.key,
-            num_live_points_per_sample=results.num_live_points_per_sample,
-            log_L_samples=results.log_L_samples,
+            num_live_points_per_sample=ns_results.num_live_points_per_sample,
+            log_L_samples=ns_results.log_L_samples,
             S=5000
         )
         log_Z_mean = jnp.nanmean(log_Z)
-        results = results._replace(
-            log_Z_mean=jnp.where(jnp.isnan(log_Z_mean), results.log_Z_mean, log_Z_mean),
+        ns_results = ns_results._replace(
+            log_Z_mean=jnp.where(jnp.isnan(log_Z_mean), ns_results.log_Z_mean, log_Z_mean),
         )
         os.makedirs(self.outdir, exist_ok=True)
-        summary(results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
-        plot_diagnostics(results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
-        plot_cornerplot(results)
+        summary(ns_results, f_obj=os.path.join(self.outdir, f"{self.label}_summary.txt"))
+        # with plt.ion():
+        plot_diagnostics(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_diagnostics.png"))
+        plot_cornerplot(ns_results, save_name=os.path.join(self.outdir, f"{self.label}_cornerplot.png"))
+        # plt.close('all')
 
-        self._generate_result(results)
-        # self.result.sampling_time = self.sampling_time
+        self._generate_result(ns_results)
+        self.result.sampling_time = sampling_time
 
         return self.result
 
-    def _generate_result(self, results, vars=None):
+    def _generate_result(self, ns_results, vars=None):
 
         try:
             import arviz as az
         except ImportError:
             raise RuntimeError("You must run `pip install arviz`")
 
-        self.result.log_evidence = np.asarray(results.log_Z_mean)
-        self.result.log_evidence_err = np.asarray(results.log_Z_uncert)
+        self.result.log_evidence = np.asarray(ns_results.log_Z_mean)
+        self.result.log_evidence_err = np.asarray(ns_results.log_Z_uncert)
 
-        samples = resample(random.PRNGKey(42), results.samples, results.log_dp_mean,
-                           S=max(self.model.U_ndims * 1000, int(results.ESS)))
+        samples = resample(random.PRNGKey(42), ns_results.samples, ns_results.log_dp_mean,
+                           S=max(self.model.U_ndims * 1000, int(ns_results.ESS)))
 
-        self.result.num_likelihood_evaluations = np.asarray(results.total_num_likelihood_evaluations)
+        self.result.num_likelihood_evaluations = np.asarray(ns_results.total_num_likelihood_evaluations)
 
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
