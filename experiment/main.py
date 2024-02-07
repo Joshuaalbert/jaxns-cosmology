@@ -136,7 +136,7 @@ def main(sampler_name: str | None):
         ('dynesty', dynesty_models_and_parameters()),
         ('pypolychord', pypolychord_models_and_parameters()),
         ('nautilus', nautilus_models_and_parameters()),
-        # ('pymultinest', pymultinest_models_and_parameters()),
+        ('pymultinest', pymultinest_models_and_parameters()),
         ('jaxns', jaxns_models_and_parameters()),
         ('nessai', nessai_models_and_parameters()),
         ('ultranest', ultranest_models_and_parameters())
