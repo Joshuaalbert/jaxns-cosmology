@@ -132,7 +132,8 @@ class Jaxns(NestedSampler):
         self.result.log_evidence_err = np.asarray(ns_results.log_Z_uncert)
 
         samples = resample(random.PRNGKey(42), ns_results.samples, ns_results.log_dp_mean,
-                           S=max(model.U_ndims * 1000, int(ns_results.ESS)))
+                           S=max(model.U_ndims * 1000, int(ns_results.ESS)),
+                           replace=True)
 
         self.result.num_likelihood_evaluations = np.asarray(ns_results.total_num_likelihood_evaluations)
 

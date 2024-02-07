@@ -118,7 +118,21 @@ class Experiment:
         for model_name, model, params in model_and_param_gen:
             os.chdir(main_dir)
             run_dir_glob = os.path.join(main_dir, self.sampler, f"{model_name}_run_*")
+
             past_runs = glob.glob(run_dir_glob)
+            # See if it's run before
+            same = False
+            for past_run in past_runs:
+                if not os.path.exists(os.path.join(past_run, f"{model_name}_experiment_result.json")):
+                    continue
+                with open(os.path.join(past_run, f"{model_name}_experiment_result.json"),'r') as f:
+                    result = ExperimentResult.parse_raw(f.read())
+                    same = all(params.get(k, None) == v for k, v in result.params.items())
+                if same:
+                    break
+            if same:
+                continue
+
             new_run = os.path.join(main_dir, self.sampler, f"{model_name}_run_{len(past_runs):03d}")
 
             # create folder and cd there

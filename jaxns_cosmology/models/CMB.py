@@ -147,7 +147,7 @@ def build_CMB_model() -> Model:
         x = jnp.where(x[2] > 0.0224, x.at[2].set(0.0446 - 1. * x[2]), x)
         # cut = (x[2] > 0.0224)
         x = (x - x_mean) / x_stdev
-        x = jnp.reshape(x, (1, -1))
+        x = jnp.reshape(x, (1, -1)).astype(jnp.float32)
         y, _ = jax_func(jax_params, x, rng=jax.random.PRNGKey(42))
         y = (y * y_stdev) + y_mean
         # y = jnp.where(cut, -(y - 0.28 * y), -y)

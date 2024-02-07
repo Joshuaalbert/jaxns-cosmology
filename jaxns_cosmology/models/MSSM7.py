@@ -87,10 +87,10 @@ def build_MSSM7_model() -> Model:
 
     x_min = jnp.array([-7.16775760e+03, 4.27547804e+05, -9.98192815e+07, -6.81824964e+07,
                        -9.99995488e+03, -9.99999903e+03, 3.00597043e+00, 1.71060011e+02,
-                       1.16700013e-01, 2.00000156e-01, 1.90001455e+01, 3.10001673e+01], jnp.float32)
+                       1.16700013e-01, 2.00000156e-01, 1.90001455e+01, 3.10001673e+01], jnp.float64)
     x_max = jnp.array([7.18253463e+03, 9.99999857e+07, 4.56142832e+05, 9.99999734e+07,
                        9.99987623e+03, 9.99999881e+03, 6.99999394e+01, 1.75619963e+02,
-                       1.20299997e-01, 7.99999435e-01, 6.69997800e+01, 8.49983345e+01], jnp.float32)
+                       1.20299997e-01, 7.99999435e-01, 6.69997800e+01, 8.49983345e+01], jnp.float64)
 
     def prior_model():
         x = yield Prior(tfpd.Uniform(low=x_min,
@@ -119,7 +119,7 @@ def build_MSSM7_model() -> Model:
         y_stdev = 7.461633956842537
 
         x = (x - x_mean) / x_stdev
-        x = jnp.reshape(x, (1, -1))
+        x = jnp.reshape(x, (1, -1)).astype(jnp.float32)
         y, _ = jax_func(jax_params, x, rng=jax.random.PRNGKey(42))
         y = (y * y_stdev) + y_mean
         return -y.reshape(())

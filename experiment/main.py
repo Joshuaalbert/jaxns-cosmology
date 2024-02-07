@@ -74,8 +74,9 @@ def jaxns_models_and_parameters():
                     ),
                     model=model
                 )
-                if key == 'MSSM7':
-                    params['term_params']['dlogZ'] = 1e-6
+                # if key == 'MSSM7':
+                #     params['term_params']['dlogZ'] = 1e-5
+                #     params['k'] = model.U_ndims // 2 # to prevent using up all the samples (virtual ones)
                 yield key, model, params
 
 
