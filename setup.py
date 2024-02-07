@@ -17,8 +17,30 @@ def get_all_subdirs(top, *dirs):
     return data_dir
 
 
-setup_requires = [
-    "jaxns>=2.4.8",
+# Install requires:
+# jaxns==2.4.8
+# jax
+# jaxlib
+# etils
+# bilby
+# matplotlib
+# numpy
+# scipy
+# pytest
+# tensorflow_probability
+# arviz
+# nessai
+# pyyaml
+# h5py
+# pydantic
+# nautilus-sampler
+# ultranest
+# dynesty
+# pymultinest
+# git+https://github.com/PolyChord/PolyChordLite@master
+
+install_requires = [
+    "jaxns==2.4.8",
     "jax",
     "jaxlib",
     "etils",
@@ -26,9 +48,17 @@ setup_requires = [
     "matplotlib",
     "numpy",
     "scipy",
-    "pytest",
     "tensorflow_probability",
-    "arviz"
+    "arviz",
+    "nessai",
+    "pyyaml",
+    "h5py",
+    "pydantic",
+    "nautilus-sampler",
+    "ultranest",
+    "dynesty",
+    "pymultinest",
+    "pypolychord"
 ]
 
 with open("README.md", "r") as fh:
@@ -42,11 +72,11 @@ setup(name='jaxns_cosmology',
       url="https://github.com/Joshuaalbert/jaxns-cosmology",
       author='Joshua G. Albert',
       author_email='josh.albert@touchintel.io',
-      setup_requires=setup_requires,
+      install_requires=install_requires,
       tests_require=[
           'pytest>=2.8',
       ],
-package_data={
+      package_data={
           'jaxns_cosmology': sum([get_all_subdirs('jaxns_cosmology', 'models', 'ml_functions')], [])
       },
       package_dir={'': './'},
