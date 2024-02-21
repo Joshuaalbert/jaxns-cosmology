@@ -55,11 +55,17 @@ def timeout_run(func: Callable[..., T], *args, timeout: float | None = None) -> 
         future = pool.submit(run_with_timeout)
         return future.result(timeout=timeout)
 
+class TooManyLikelihoodEvals(Exception):
+    pass
+
+class TooLong(Exception):
+    pass
 
 class Experiment:
-    def __init__(self, sampler: str, max_run_time: float):
+    def __init__(self, sampler: str, max_run_time: float, max_likelihood_evals: int):
         self.sampler = sampler
         self.max_run_time = max_run_time
+        self.max_likelihood_evals = max_likelihood_evals
 
     def run_model(self, model_name: str, model, params):
 
@@ -68,13 +74,25 @@ class Experiment:
         forward = convert_model(model)
 
         class Likelihood(bilby.Likelihood):
-            def __init__(self):
+            def __init__(self,
+                         max_run_time=self.max_run_time,
+                         max_likelihood_evals=self.max_likelihood_evals
+                         ):
                 """A very simple Gaussian likelihood"""
                 super().__init__(parameters={f"x{i}": None for i in range(model.U_ndims)})
+                self.__num_likelihood_evals = 0
+                self.__max_run_time = max_run_time
+                self.__start_time = time.time()
+                self.__max_likelihood_evals = max_likelihood_evals
 
             def log_likelihood(self):
                 """Log-likelihood."""
                 u = jnp.asarray([self.parameters[f"x{i}"] for i in range(model.U_ndims)])
+                self.__num_likelihood_evals += 1
+                if self.__num_likelihood_evals > self.__max_likelihood_evals:
+                    raise TooManyLikelihoodEvals(f"Exceeded maximum likelihood evaluations of {self.__max_likelihood_evals}")
+                if time.time() - self.__start_time > self.__max_run_time:
+                    raise TooLong(f"Exceeded maximum run time of {self.__max_run_time} seconds")
                 return float(forward(u))
 
         priors = {
@@ -153,6 +171,12 @@ class Experiment:
             except InterruptedError:
                 print(f"Model {model_name} {params} was interrupted.")
                 continue
+            except TooManyLikelihoodEvals:
+                print(f"Model {model_name} {params} exceeded maximum likelihood evaluations of {self.max_likelihood_evals}")
+                continue
+            except TooLong:
+                print(f"Model {model_name} {params} exceeded maximum run time of {self.max_run_time} seconds.")
+                continue
 
             t = time.time() - t0
 
@@ -167,3 +191,5 @@ class Experiment:
         results = sorted(results, key=lambda x: x[1].likelihood_evals)
         for filename, result in results:
             print(f"{filename}: {result.likelihood_evals} likelihood evals")
+
+        os.chdir(main_dir)

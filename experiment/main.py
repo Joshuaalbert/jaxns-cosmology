@@ -1,4 +1,5 @@
 from jax import config
+
 config.update("jax_enable_x64", True)
 
 import matplotlib
@@ -144,7 +145,7 @@ def main(sampler_name: str | None):
         ('dynesty', dynesty_models_and_parameters()),
         ('pypolychord', pypolychord_models_and_parameters()),
         ('nautilus', nautilus_models_and_parameters()),
-        ('pymultinest', pymultinest_models_and_parameters()),
+        # ('pymultinest', pymultinest_models_and_parameters()),
         ('jaxns', jaxns_models_and_parameters()),
         ('nessai', nessai_models_and_parameters()),
         ('ultranest', ultranest_models_and_parameters())
@@ -153,7 +154,11 @@ def main(sampler_name: str | None):
         if sampler_name is not None:
             if sampler != sampler_name:
                 continue
-        experiment = Experiment(sampler=sampler, max_run_time=MAX_WALL_TIME_SECONDS)
+        experiment = Experiment(
+            sampler=sampler,
+            max_run_time=MAX_WALL_TIME_SECONDS,
+            max_likelihood_evals=float('inf')
+        )
         experiment.run(models_and_parameters)
 
 

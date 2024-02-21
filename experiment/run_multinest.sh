@@ -15,9 +15,8 @@ cleanup() {
 trap cleanup INT TERM
 
 # pymultinest needs to be done separately, because the interface doesn't like exceptions.
-
-for sampler_name in dynesty pypolychord nautilus jaxns nessai ultranest; do
-  python main.py "$sampler_name" &
+for model_name in CMB eggbox MSSM7 rosenbrock spikeslab; do
+  python main_multinest.py "$model_name" &
   pids+=("$!") # Store the PID of the background process
 done
 
