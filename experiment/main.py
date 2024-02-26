@@ -124,10 +124,18 @@ def pypolychord_models_and_parameters():
 def ultranest_models_and_parameters():
     for c in [25, 50, 100]:
         for key, model in all_models().items():
+            # Explore both static and reactive modes
+
             params = dict(
                 min_num_live_points=model.U_ndims * c,
                 max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
                 num_live_points=None  # Makes it use reactive mode
+            )
+            yield key, model, params
+
+            params = dict(
+                num_live_points=model.U_ndims * c, # Make it use the static mode
+                max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS
             )
             yield key, model, params
 
