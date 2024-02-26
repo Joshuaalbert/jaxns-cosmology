@@ -5,10 +5,10 @@ declare -a pids
 
 # Function to kill all background processes
 cleanup() {
-    echo "Cleaning up..."
-    for pid in "${pids[@]}"; do
-        kill -9 "$pid" 2>/dev/null
-    done
+  echo "Cleaning up..."
+  for pid in "${pids[@]}"; do
+    kill -9 "$pid" 2>/dev/null
+  done
 }
 
 # Trap INT and TERM signals and invoke cleanup
