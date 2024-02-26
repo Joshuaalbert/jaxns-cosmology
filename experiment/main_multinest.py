@@ -66,11 +66,13 @@ def main(model_name: str | None):
     experiments = [
         ('pymultinest', pymultinest_models_and_parameters(model_name))
     ]
+    # The problem is that multinest doesn't allow exceptions to terminate the implementation, so we need to run each
+    # experiment separately and manually monitor for experiment resources.
     for sampler, models_and_parameters in experiments:
         experiment = Experiment(
             sampler=sampler,
-            max_run_time=86400.,
-            max_likelihood_evals=float('inf')
+            max_run_time=86400., # 24 hours
+            max_likelihood_evals=int(1e15) # Will never reach this
         )
         experiment.run(models_and_parameters)
 

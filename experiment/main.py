@@ -106,15 +106,6 @@ def nessai_models_and_parameters():
             yield key, model, params
 
 
-def pymultinest_models_and_parameters():
-    for c in [25, 50, 100]:
-        for key, model in all_models().items():
-            params = dict(
-                n_live_points=model.U_ndims * c
-            )
-            yield key, model, params
-
-
 def pypolychord_models_and_parameters():
     """
     Return all the models and their parameters
@@ -134,8 +125,9 @@ def ultranest_models_and_parameters():
     for c in [25, 50, 100]:
         for key, model in all_models().items():
             params = dict(
-                num_live_points=model.U_ndims * c,
-                max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                min_num_live_points=model.U_ndims * c,
+                max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
+                num_live_points=None  # Makes it use reactive mode
             )
             yield key, model, params
 
@@ -145,7 +137,6 @@ def main(sampler_name: str | None):
         ('dynesty', dynesty_models_and_parameters()),
         ('pypolychord', pypolychord_models_and_parameters()),
         ('nautilus', nautilus_models_and_parameters()),
-        # ('pymultinest', pymultinest_models_and_parameters()),
         ('jaxns', jaxns_models_and_parameters()),
         ('nessai', nessai_models_and_parameters()),
         ('ultranest', ultranest_models_and_parameters())
@@ -157,7 +148,7 @@ def main(sampler_name: str | None):
         experiment = Experiment(
             sampler=sampler,
             max_run_time=MAX_WALL_TIME_SECONDS,
-            max_likelihood_evals=float('inf')
+            max_likelihood_evals=MAX_NUM_LIKELIHOOD_EVALUATIONS
         )
         experiment.run(models_and_parameters)
 
