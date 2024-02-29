@@ -5,7 +5,7 @@ from concurrent import futures
 import bilby
 import jax.numpy as jnp
 
-from jaxns_cosmology import install_jaxns_sampler, install_nautilus_sampler
+from jaxns_cosmology import install_jaxns_sampler, install_nautilus_sampler, install_ultranest_sampler
 
 # Set export CUDA_VISIBLE_DEVICES=""
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -19,6 +19,7 @@ from jaxns_cosmology.models.convert import convert_model
 
 install_jaxns_sampler()
 install_nautilus_sampler()
+install_ultranest_sampler()
 
 
 class ExperimentResult(BaseModel):
@@ -55,11 +56,14 @@ def timeout_run(func: Callable[..., T], *args, timeout: float | None = None) -> 
         future = pool.submit(run_with_timeout)
         return future.result(timeout=timeout)
 
+
 class TooManyLikelihoodEvals(Exception):
     pass
 
+
 class TooLong(Exception):
     pass
+
 
 class Experiment:
     def __init__(self, sampler: str, max_run_time: float, max_likelihood_evals: int):
@@ -90,7 +94,8 @@ class Experiment:
                 u = jnp.asarray([self.parameters[f"x{i}"] for i in range(model.U_ndims)])
                 self.__num_likelihood_evals += 1
                 if self.__num_likelihood_evals > self.__max_likelihood_evals:
-                    raise TooManyLikelihoodEvals(f"Exceeded maximum likelihood evaluations of {self.__max_likelihood_evals}")
+                    raise TooManyLikelihoodEvals(
+                        f"Exceeded maximum likelihood evaluations of {self.__max_likelihood_evals}")
                 if time.time() - self.__start_time > self.__max_run_time:
                     raise TooLong(f"Exceeded maximum run time of {self.__max_run_time} seconds")
                 return float(forward(u))
@@ -172,7 +177,8 @@ class Experiment:
                 print(f"Model {model_name} {params} was interrupted.")
                 continue
             except TooManyLikelihoodEvals:
-                print(f"Model {model_name} {params} exceeded maximum likelihood evaluations of {self.max_likelihood_evals}")
+                print(
+                    f"Model {model_name} {params} exceeded maximum likelihood evaluations of {self.max_likelihood_evals}")
                 continue
             except TooLong:
                 print(f"Model {model_name} {params} exceeded maximum run time of {self.max_run_time} seconds.")

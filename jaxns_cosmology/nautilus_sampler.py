@@ -1,8 +1,9 @@
+import os
 import time
 
 import jax
 import numpy as np
-from bilby.core.sampler.base_sampler import NestedSampler
+from bilby.core.sampler.base_sampler import NestedSampler, signal_wrapper
 from jax import tree_map
 from jaxns import resample
 from nautilus import Prior, Sampler
@@ -84,6 +85,7 @@ class Nautilus(NestedSampler):
         ndims = int(sum([self.tuple_prod(v.shape[1:]) for k, v in results.samples.items() if (k in vars)]))
         return ndims
 
+    @signal_wrapper
     def run_sampler(self):
 
         # self._verify_kwargs_against_default_kwargs()
@@ -110,35 +112,33 @@ class Nautilus(NestedSampler):
         sampler.run(verbose=True, discard_exploration=discard_exploration)
         sampling_time = time.time() - t0
 
-        samples, log_weights, _ = sampler.posterior(return_as_dict=True, equal_weight=False)
+        samples, log_weights, log_L = sampler.posterior(return_as_dict=True, equal_weight=False)
 
         samples = resample(jax.random.PRNGKey(42), samples, log_weights,
-                           S=2000)
-
-        ns_results = dict(
-            samples=samples,
-            log_Z_mean=sampler.evidence(),
-            log_Z_uncert=np.nan
-        )
-
-        self._generate_result(ns_results)
-        self.result.sampling_time = sampling_time
-
-        return self.result
-
-    def _generate_result(self, ns_results, vars=None):
+                           S=2000, replace=True)
 
         try:
             import arviz as az
         except ImportError:
             raise RuntimeError("You must run `pip install arviz`")
 
-        self.result.log_evidence = np.asarray(ns_results['log_Z_mean'])
-        self.result.log_evidence_err = np.asarray(ns_results['log_Z_uncert'])
-        self.result.num_likelihood_evaluations = self._num_likelihood_evals
-        samples = ns_results['samples']
-
         self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
 
         # self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
         self.result.samples = self.posterior.drop(['chain', 'draw'], axis=1).to_numpy()
+
+        # self._generate_result(ns_results)
+        self.result.sampling_time = sampling_time
+
+        self.result.log_evidence = sampler.evidence()
+
+        self.result.log_likelihood_evaluations = log_L
+        self.result.num_likelihood_evaluations = sampler.n_like
+        self.result.ess = sampler.effective_sample_size()
+
+        with open(os.path.join(self.outdir, f"{self.label}_summary.txt"), 'w') as file:
+            file.write("ESS={}".format(int(self.result.ess)))
+            file.write("\n")
+            file.write("likelihood evals:{}".format(sampler.n_like))
+
+        return self.result

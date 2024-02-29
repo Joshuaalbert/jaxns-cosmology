@@ -15,6 +15,10 @@ cleanup() {
 trap cleanup INT TERM
 
 # pymultinest needs to be done separately, because the interface doesn't like exceptions.
+
+# Ensure that the MultiNest library is in the library path
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:pymultinest
+
 for model_name in CMB eggbox MSSM7 rosenbrock spikeslab; do
   python main_multinest.py "$model_name" &
   pids+=("$!") # Store the PID of the background process
