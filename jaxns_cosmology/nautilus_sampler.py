@@ -1,11 +1,7 @@
 import os
 import time
 
-import jax
-import numpy as np
 from bilby.core.sampler.base_sampler import NestedSampler, signal_wrapper
-from jax import tree_map
-from jaxns import resample
 from nautilus import Prior, Sampler
 
 
@@ -111,28 +107,12 @@ class Nautilus(NestedSampler):
         t0 = time.time()
         sampler.run(verbose=True, discard_exploration=discard_exploration)
         sampling_time = time.time() - t0
-
-        samples, log_weights, log_L = sampler.posterior(return_as_dict=True, equal_weight=False)
-
-        samples = resample(jax.random.PRNGKey(42), samples, log_weights,
-                           S=2000, replace=True)
-
-        try:
-            import arviz as az
-        except ImportError:
-            raise RuntimeError("You must run `pip install arviz`")
-
-        self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
-
-        # self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
-        self.result.samples = self.posterior.drop(['chain', 'draw'], axis=1).to_numpy()
-
-        # self._generate_result(ns_results)
         self.result.sampling_time = sampling_time
 
         self.result.log_evidence = sampler.evidence()
-
-        self.result.log_likelihood_evaluations = log_L
+        points, _, log_l = sampler.posterior(equal_weight=True)
+        self.result.samples = points
+        self.result.log_likelihood_evaluations = log_l
         self.result.num_likelihood_evaluations = sampler.n_like
         self.result.ess = sampler.effective_sample_size()
 
