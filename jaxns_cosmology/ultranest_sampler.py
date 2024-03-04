@@ -290,9 +290,7 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
 
         with open(os.path.join(self.outdir, f"{self.label}_summary.txt"), 'w') as file:
             file.write("ESS={}".format(int(out["ess"])))
-            # file.write("\n")
-            # file.write('insertion_order_MWW_test={}'.format(float(out[insertion_order_MWW_test])))
-            # file.write("likelihood evals:{}".format(self.result.log_likelihood_evaluations))
+            file.write("likelihood evals:{}".format(out["ncall"]))
 
     def log_likelihood(self, theta):
         log_l = super(Ultranest, self).log_likelihood(theta=theta)
