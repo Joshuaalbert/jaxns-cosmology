@@ -43,7 +43,6 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
     default_kwargs = dict(
         resume=True,
         show_status=True,
-        num_live_points=None,
         wrapped_params=None,
         log_dir=None,
         derived_param_names=[],
@@ -158,16 +157,7 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
 
     @property
     def sampler_function_kwargs(self):
-        if self.kwargs.get("num_live_points", None) is not None:
-            keys = [
-                "update_interval_iter",
-                "update_interval_ncall",
-                "log_interval",
-                "dlogz",
-                "max_iters",
-            ]
-        else:
-            keys = [
+        keys = [
                 "update_interval_volume_fraction",
                 "update_interval_ncall",
                 "log_interval",
@@ -226,10 +216,7 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
         self._check_and_load_sampling_time_file()
 
         # use reactive nested sampler when no live points are given
-        if self.kwargs.get("num_live_points", None) is not None:
-            integrator = ultranest.integrator.NestedSampler
-        else:
-            integrator = ultranest.integrator.ReactiveNestedSampler
+        integrator = ultranest.integrator.ReactiveNestedSampler
 
         sampler = integrator(
             self.search_parameter_keys,
