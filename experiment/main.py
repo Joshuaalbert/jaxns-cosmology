@@ -67,25 +67,22 @@ def dynesty_models_and_parameters():
 
 
 def jaxns_models_and_parameters():
-    for s in [5, 7, 10, 15]:
-        for _c in [30, 50, 75, 100]:
-            for key, model in all_models().items():
-                params = dict(
-                    max_samples=1e6,
-                    difficult_model=True,
-                    parameter_estimation=True,
-                    c=model.U_ndims * _c,
-                    s=s,
-                    term_params=dict(
-                        dlogZ=1e-4,
-                        # max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
-                    ),
-                    model=model
-                )
-                if key == 'MSSM7':
-                    params['term_params']['dlogZ'] = 1e-6
-                    # params['k'] = model.U_ndims // 2 # to prevent using up all the samples (virtual ones)
-                yield key, model, params
+    for key, model in all_models().items():
+        for s in [5]:
+            for c in [model.U_ndims * 25, model.U_ndims * 50, model.U_ndims * 100]:
+                for k in list(range(model.U_ndims // 2 + 1)):
+                    params = dict(
+                        max_samples=1e7,
+                        k=k,
+                        c=c,
+                        s=s,
+                        term_params=dict(
+                            dlogZ=1e-4,
+                            # max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                        ),
+                        model=model
+                    )
+                    yield key, model, params
 
 
 def nautilus_models_and_parameters():

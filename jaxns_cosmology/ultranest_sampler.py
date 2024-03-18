@@ -7,6 +7,8 @@ import time
 import numpy as np
 from bilby.core.sampler.base_sampler import NestedSampler, signal_wrapper, _TemporaryFileSamplerMixin
 from pandas import DataFrame
+from ultranest import ReactiveNestedSampler
+from ultranest.mlfriends import AffineLayer
 
 logger = logging.getLogger(__name__)
 
@@ -158,22 +160,22 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
     @property
     def sampler_function_kwargs(self):
         keys = [
-                "update_interval_volume_fraction",
-                "update_interval_ncall",
-                "log_interval",
-                "show_status",
-                "viz_callback",
-                "dlogz",
-                "dKL",
-                "frac_remain",
-                "Lepsilon",
-                "min_ess",
-                "max_iters",
-                "max_ncalls",
-                "max_num_improvement_loops",
-                "min_num_live_points",
-                "cluster_num_live_points",
-            ]
+            "update_interval_volume_fraction",
+            "update_interval_ncall",
+            "log_interval",
+            "show_status",
+            "viz_callback",
+            "dlogz",
+            "dKL",
+            "frac_remain",
+            "Lepsilon",
+            "min_ess",
+            "max_iters",
+            "max_ncalls",
+            "max_num_improvement_loops",
+            "min_num_live_points",
+            "cluster_num_live_points",
+        ]
 
         function_kwargs = {key: self.kwargs[key] for key in keys if key in self.kwargs}
 
@@ -215,15 +217,14 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
         self.kwargs["log_dir"] = self.kwargs["outputfiles_basename"]
         self._check_and_load_sampling_time_file()
 
-        # use reactive nested sampler when no live points are given
-        integrator = ultranest.integrator.ReactiveNestedSampler
-
-        sampler = integrator(
+        sampler = ReactiveNestedSampler(
             self.search_parameter_keys,
             self.log_likelihood,
             transform=self.prior_transform,
             **self.sampler_init_kwargs,
         )
+
+        sampler.transform_layer_class = AffineLayer
 
         if stepsampler is not None:
             if isinstance(stepsampler, ultranest.stepsampler.StepSampler):
@@ -267,10 +268,6 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
         self.result.nested_samples = nested_samples
         self.result.log_evidence = out["logz"]
         self.result.log_evidence_err = out["logzerr"]
-        if self.kwargs["num_live_points"] is not None:
-            self.result.information_gain = (
-                    np.power(out["logzerr"], 2) * self.kwargs["num_live_points"]
-            )
 
         self.result.outputfiles_basename = self.outputfiles_basename
         self.result.sampling_time = datetime.timedelta(seconds=self.total_sampling_time)

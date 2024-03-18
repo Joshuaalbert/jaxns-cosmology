@@ -19,7 +19,7 @@ trap cleanup INT TERM
 # Ensure that the MultiNest library is in the library path
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:pymultinest
 
-for model_name in CMB eggbox MSSM7 rosenbrock spikeslab; do
+for model_name in CMB eggbox MSSM7 rastrigin rosenbrock spikeslab; do
   python main_multinest.py "$model_name" &
   pids+=("$!") # Store the PID of the background process
 done
