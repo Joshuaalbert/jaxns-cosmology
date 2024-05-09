@@ -21,7 +21,7 @@ from jaxns_cosmology.experiment import Experiment
 T = TypeVar('T')
 
 MAX_NUM_LIKELIHOOD_EVALUATIONS = int(50e6)
-MAX_WALL_TIME_SECONDS = 3600.
+MAX_WALL_TIME_SECONDS = 2 * 3600.
 
 
 def timeout_run(func: Callable[..., T], *args, timeout: float | None = None) -> T:
@@ -57,50 +57,90 @@ def dynesty_models_and_parameters():
     Returns:
         A dictionary of models and their parameters and term params
     """
-    for c in [25, 50, 100]:
-        for key, model in all_models().items():
-            params = dict(
-                nlive=model.U_ndims * c,
-                maxcall=MAX_NUM_LIKELIHOOD_EVALUATIONS
-            )
-            yield key, model, params
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+                params = dict(
+                    nlive=model.U_ndims * c,
+                    # maxcall=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                )
+                yield key, model, params
+        else:
+            for c_ in [25, 50, 100]:
+                params = dict(
+                    nlive=model.U_ndims * c_,
+                    maxcall=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                )
+                yield key, model, params
 
 
 def jaxns_models_and_parameters():
     for key, model in all_models().items():
-        for s in [5]:
-            for c in [model.U_ndims * 25, model.U_ndims * 50, model.U_ndims * 100]:
-                for k in list(range(model.U_ndims // 2 + 1)):
-                    params = dict(
-                        max_samples=1e7,
-                        k=k,
-                        c=c,
-                        s=s,
-                        term_params=dict(
-                            dlogZ=1e-4,
-                            # max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
-                        ),
-                        model=model
-                    )
-                    yield key, model, params
+        if key == 'rastrigin':
+            for s in [5, 10]:
+                for c in [model.U_ndims * 25, model.U_ndims * 50, model.U_ndims * 100,
+                          model.U_ndims * 200, model.U_ndims * 500, model.U_ndims * 1000]:
+                    for k in [model.U_ndims // 2]:
+                        params = dict(
+                            max_samples=1e8,
+                            k=k,
+                            c=c,
+                            s=s,
+                            term_params=dict(
+                                dlogZ=1e-6,
+                                # max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                            ),
+                            model=model
+                        )
+                        yield key, model, params
+        else:
+            for s in [5]:
+                for c in [model.U_ndims * 25, model.U_ndims * 50, model.U_ndims * 100]:
+                    for k in list(range(model.U_ndims // 2 + 1)):
+                        params = dict(
+                            max_samples=1e8,
+                            k=k,
+                            c=c,
+                            s=s,
+                            term_params=dict(
+                                dlogZ=1e-4,
+                                max_num_likelihood_evaluations=MAX_NUM_LIKELIHOOD_EVALUATIONS
+                            ),
+                            model=model
+                        )
+                        yield key, model, params
 
 
 def nautilus_models_and_parameters():
-    for c_ in [25, 50, 100]:
-        for key, model in all_models().items():
-            params = dict(
-                n_live=model.U_ndims * c_
-            )
-            yield key, model, params
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+                params = dict(
+                    n_live=model.U_ndims * c
+                )
+                yield key, model, params
+        else:
+            for c_ in [25, 50, 100]:
+                params = dict(
+                    n_live=model.U_ndims * c_
+                )
+                yield key, model, params
 
 
 def nessai_models_and_parameters():
-    for c_ in [25, 50, 100]:
-        for key, model in all_models().items():
-            params = dict(
-                nlive=model.U_ndims * c_
-            )
-            yield key, model, params
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+                params = dict(
+                    nlive=model.U_ndims * c
+                )
+                yield key, model, params
+        else:
+            for c_ in [25, 50, 100]:
+                params = dict(
+                    nlive=model.U_ndims * c_
+                )
+                yield key, model, params
 
 
 def pypolychord_models_and_parameters():
@@ -110,32 +150,56 @@ def pypolychord_models_and_parameters():
     Returns:
         A dictionary of models and their parameters and term params
     """
-    for c_ in [25, 50, 100]:
-        for key, model in all_models().items():
-            params = dict(
-                nlive=model.U_ndims * c_
-            )
-            yield key, model, params
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+                params = dict(
+                    nlive=model.U_ndims * c
+                )
+                yield key, model, params
+        else:
+            for c_ in [25, 50, 100]:
+                params = dict(
+                    nlive=model.U_ndims * c_
+                )
+                yield key, model, params
 
 
 def ultranest_models_and_parameters():
-    for c in [25, 50, 100]:
-        for key, model in all_models().items():
-            # Explore both static and reactive modes
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+                # Explore both static and reactive modes
 
-            params = dict(
-                min_num_live_points=model.U_ndims * c,
-                max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
-                max_num_improvement_loops=-1  # Makes it use reactive mode
-            )
-            yield key, model, params
+                params = dict(
+                    min_num_live_points=model.U_ndims * c,
+                    max_num_improvement_loops=-1  # Makes it use reactive mode
+                )
+                yield key, model, params
 
-            params = dict(
-                min_num_live_points=model.U_ndims * c,
-                max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
-                max_num_improvement_loops=0  # Make it use the static mode
-            )
-            yield key, model, params
+                params = dict(
+                    min_num_live_points=model.U_ndims * c,
+                    max_num_improvement_loops=0  # Make it use the static mode
+                )
+                yield key, model, params
+
+        else:
+            for c in [25, 50, 100]:
+                # Explore both static and reactive modes
+
+                params = dict(
+                    min_num_live_points=model.U_ndims * c,
+                    max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
+                    max_num_improvement_loops=-1  # Makes it use reactive mode
+                )
+                yield key, model, params
+
+                params = dict(
+                    min_num_live_points=model.U_ndims * c,
+                    max_ncalls=MAX_NUM_LIKELIHOOD_EVALUATIONS,
+                    max_num_improvement_loops=0  # Make it use the static mode
+                )
+                yield key, model, params
 
 
 def main(sampler_name: str | None):

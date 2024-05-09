@@ -17,30 +17,8 @@ def get_all_subdirs(top, *dirs):
     return data_dir
 
 
-# Install requires:
-# jaxns==2.4.8
-# jax
-# jaxlib
-# etils
-# bilby
-# matplotlib
-# numpy
-# scipy
-# pytest
-# tensorflow_probability
-# arviz
-# nessai
-# pyyaml
-# h5py
-# pydantic
-# nautilus-sampler
-# ultranest
-# dynesty
-# pymultinest
-# git+https://github.com/PolyChord/PolyChordLite@master
-
 install_requires = [
-    "jaxns==2.4.8",
+    "jaxns==2.4.13",
     "jax",
     "jaxlib",
     "etils",

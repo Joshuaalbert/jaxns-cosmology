@@ -1,4 +1,4 @@
-jaxns==2.4.8
+jaxns==2.4.13
 jax
 jaxlib
 etils

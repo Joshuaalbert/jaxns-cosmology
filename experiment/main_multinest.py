@@ -21,7 +21,7 @@ from jaxns_cosmology.experiment import Experiment
 T = TypeVar('T')
 
 MAX_NUM_LIKELIHOOD_EVALUATIONS = int(50e6)
-MAX_WALL_TIME_SECONDS = 3600.
+MAX_WALL_TIME_SECONDS = 2 * 3600.
 
 
 def timeout_run(func: Callable[..., T], *args, timeout: float | None = None) -> T:
@@ -51,15 +51,28 @@ def timeout_run(func: Callable[..., T], *args, timeout: float | None = None) -> 
 
 
 def pymultinest_models_and_parameters(model_name):
-    for c in [25, 50, 100]:
-        for key, model in all_models().items():
-            if key is not None:
-                if key != model_name:
-                    continue
-            params = dict(
-                n_live_points=model.U_ndims * c
-            )
-            yield key, model, params
+    for key, model in all_models().items():
+        if key == 'rastrigin':
+            for c in [25, 50, 100, 200, 500, 1000]:
+
+                if key is not None:
+                    if key != model_name:
+                        continue
+                params = dict(
+                    n_live_points=model.U_ndims * c
+                )
+                yield key, model, params
+
+        else:
+            for c in [25, 50, 100]:
+
+                if key is not None:
+                    if key != model_name:
+                        continue
+                params = dict(
+                    n_live_points=model.U_ndims * c
+                )
+                yield key, model, params
 
 
 def main(model_name: str | None):
@@ -71,8 +84,8 @@ def main(model_name: str | None):
     for sampler, models_and_parameters in experiments:
         experiment = Experiment(
             sampler=sampler,
-            max_run_time=86400., # 24 hours
-            max_likelihood_evals=int(1e15) # Will never reach this
+            max_run_time=86400.,  # 24 hours
+            max_likelihood_evals=int(1e15)  # Will never reach this
         )
         experiment.run(models_and_parameters)
 

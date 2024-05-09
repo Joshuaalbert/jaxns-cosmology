@@ -19,7 +19,7 @@ def build_rastrigin_model(ndim: int) -> Model:
     def prior_model():
         x_min = -5.12
         x_max = 5.12
-        z = yield Prior(tfpd.Uniform(low=x_min * jnp.zeros(ndim), high=x_max * jnp.ones(ndim)), name='z')
+        z = yield Prior(tfpd.Uniform(low=x_min * jnp.ones(ndim), high=x_max * jnp.ones(ndim)), name='z')
         return z
 
     def log_likelihood(z):
