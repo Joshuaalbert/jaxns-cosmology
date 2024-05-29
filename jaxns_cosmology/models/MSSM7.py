@@ -23,8 +23,14 @@ def build_MSSM7_model() -> Model:
     # Use it inside the log_likelihood function
 
     def prior_model():
-        x = yield Prior(tfpd.Uniform(low=jnp.zeros(12),
-                                     high=jnp.ones(12)), name='x')
+        x_min = jnp.array([-7.16775760e+03, 4.27547804e+05, -9.98192815e+07, -6.81824964e+07,
+                           -9.99995488e+03, -9.99999903e+03, 3.00597043e+00, 1.71060011e+02,
+                           1.16700013e-01, 2.00000156e-01, 1.90001455e+01, 3.10001673e+01], jnp.float64)
+        x_max = jnp.array([7.18253463e+03, 9.99999857e+07, 4.56142832e+05, 9.99999734e+07,
+                           9.99987623e+03, 9.99999881e+03, 6.99999394e+01, 1.75619963e+02,
+                           1.20299997e-01, 7.99999435e-01, 6.69997800e+01, 8.49983345e+01], jnp.float64)
+        x = yield Prior(tfpd.Uniform(low=x_min,
+                                     high=x_max), name='x')
         return x
 
     def log_likelihood(x: jnp.ndarray):
@@ -35,14 +41,6 @@ def build_MSSM7_model() -> Model:
         @tf.function
         def predict(x):
             return restored(x, training=False)
-
-        x_min = jnp.array([-7.16775760e+03, 4.27547804e+05, -9.98192815e+07, -6.81824964e+07,
-                           -9.99995488e+03, -9.99999903e+03, 3.00597043e+00, 1.71060011e+02,
-                           1.16700013e-01, 2.00000156e-01, 1.90001455e+01, 3.10001673e+01], jnp.float64)
-        x_max = jnp.array([7.18253463e+03, 9.99999857e+07, 4.56142832e+05, 9.99999734e+07,
-                           9.99987623e+03, 9.99999881e+03, 6.99999394e+01, 1.75619963e+02,
-                           1.20299997e-01, 7.99999435e-01, 6.69997800e+01, 8.49983345e+01], jnp.float64)
-        x = x * (x_max - x_min) + x_min
 
         # Load SavedModel
         jax_func, jax_params = tf2jax.convert(predict, jnp.zeros((1, 12), jnp.float32))

@@ -5,7 +5,7 @@ import jax
 import numpy as np
 import tensorflow_probability.substrates.jax as tfp
 from bilby.core.sampler.base_sampler import NestedSampler
-from jax import random, tree_map
+from jax import random
 from jaxns import summary, plot_diagnostics, DefaultNestedSampler, resample, plot_cornerplot, TerminationCondition
 
 tfpd = tfp.distributions
@@ -128,13 +128,17 @@ class Jaxns(NestedSampler):
         self.result.log_evidence = np.asarray(ns_results.log_Z_mean)
         self.result.log_evidence_err = np.asarray(ns_results.log_Z_uncert)
 
-        samples = resample(random.PRNGKey(42), ns_results.samples, ns_results.log_dp_mean,
-                           S=max(model.U_ndims * 1000, int(ns_results.ESS)),
-                           replace=True)
+        samples = resample(random.PRNGKey(42),
+                           ns_results.U_samples,
+                           ns_results.log_dp_mean,
+                           S=max(model.U_ndims * 1000, 2 * int(ns_results.ESS)),
+                           replace=True)  # [N, D]
+        # samples_dict = {f"x": samples}
 
         self.result.num_likelihood_evaluations = np.asarray(ns_results.total_num_likelihood_evaluations)
 
-        self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples)).to_dataframe()
+        # self.posterior = az.from_dict(posterior=tree_map(lambda x: np.asarray(x[None]), samples_dict)).to_dataframe()
 
         # self.result.samples = tree_map(lambda x: np.asarray(x), samples)  #
-        self.result.samples = self.posterior.drop(['chain', 'draw'], axis=1).to_numpy()
+        # self.result.samples = self.posterior.drop(['chain', 'draw'], axis=1).to_numpy()
+        self.result.samples = np.asarray(samples)
