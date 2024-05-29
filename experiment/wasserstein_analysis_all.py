@@ -74,50 +74,8 @@ def get_result_file(result_folder: str) -> str:
     return result_files[0]
 
 
-def print_latex_tables(metric_results):
-    latex_template = r"""
-\begin{{table}}[h!]
-    \hspace*{{-2.5cm}}
-    \tiny
-    \centering
-    \begin{{tabular}}{{{columns}}}
-    \toprule
-    Algorithm & {headers} \\\\
-    \midrule
-{rows}
-    \bottomrule
-    \end{{tabular}}
-    \caption{{Wasserstein distance from reference posterior for {problem}.}}
-    \label{{tab:{problem}_wasserstein}}
-\end{{table}}
-"""
-    for problem, data in metric_results.items():
-        num_col = None
-        for algorithm, results in data.items():
-            if results is not None:
-                num_col = len(results)
-                break
-        headers = " & ".join([f"$\\theta_{{{i + 1}}}$" for i in range(num_col)])
-        columns = "c" * (num_col + 1)  # 10 parameters + 1 for Algorithm column
-
-        rows = []
-        for algorithm, results in data.items():
-            if results is None:
-                row = [algorithm] + ["--"] * num_col
-            else:
-                row = [algorithm] + [f"{float(results.get(f'x{i}')):.4f}" for i in range(num_col)]
-            rows.append(" & ".join(row) + " \\\\")
-
-        latex_table = latex_template.format(
-            problem=problem,
-            headers=headers,
-            columns=columns,
-            rows="\n    \\midrule\n    ".join(rows)
-        )
-        print(latex_table)
-
-
-def main(best_posteriors_dir, hyper_param_search_dir, problems_list: List[str], ns_list: List[str], rules_of_thumb: List[float]):
+def main(best_posteriors_dir, hyper_param_search_dir, problems_list: List[str], ns_list: List[str],
+         rules_of_thumb: List[float]):
     reference_results = dict()
     for problem in problems_list:
         reference_results[problem] = get_result_file(os.path.join(best_posteriors_dir, problem))
